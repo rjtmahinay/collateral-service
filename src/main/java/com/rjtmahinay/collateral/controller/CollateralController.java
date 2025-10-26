@@ -71,10 +71,16 @@ public class CollateralController {
                 .onErrorReturn(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Update collateral", description = "Updates an existing collateral asset with new information")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Collateral updated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Collateral.class))),
+            @ApiResponse(responseCode = "404", description = "Collateral not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
+    })
     @PutMapping("/{collateralId}")
     public Mono<ResponseEntity<Collateral>> updateCollateral(
-            @PathVariable String collateralId,
-            @RequestBody Collateral collateral) {
+            @Parameter(description = "Unique identifier of the collateral to update", required = true) @PathVariable String collateralId,
+            @Parameter(description = "Updated collateral information", required = true) @RequestBody Collateral collateral) {
         log.info("REST request to update collateral: {}", collateralId);
 
         return collateralService.updateCollateral(collateralId, collateral)
@@ -82,8 +88,14 @@ public class CollateralController {
                 .onErrorReturn(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Delete collateral", description = "Permanently removes a collateral asset from the system")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Collateral deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Collateral not found")
+    })
     @DeleteMapping("/{collateralId}")
-    public Mono<ResponseEntity<Void>> deleteCollateral(@PathVariable String collateralId) {
+    public Mono<ResponseEntity<Void>> deleteCollateral(
+            @Parameter(description = "Unique identifier of the collateral to delete", required = true) @PathVariable String collateralId) {
         log.info("REST request to delete collateral: {}", collateralId);
 
         return collateralService.deleteCollateral(collateralId)
@@ -102,36 +114,60 @@ public class CollateralController {
         return collateralService.getCollateralsByCustomerId(customerId);
     }
 
+    @Operation(summary = "Get collaterals by account", description = "Retrieves all collaterals associated with a specific account")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of collaterals for the account", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Collateral.class)))
+    })
     @GetMapping("/account/{accountId}")
-    public Flux<Collateral> getCollateralsByAccount(@PathVariable String accountId) {
+    public Flux<Collateral> getCollateralsByAccount(
+            @Parameter(description = "Unique identifier of the account", required = true) @PathVariable String accountId) {
         log.info("REST request to get collaterals for account: {}", accountId);
         return collateralService.getCollateralsByAccountId(accountId);
     }
 
+    @Operation(summary = "Get collaterals by status", description = "Retrieves all collaterals with a specific status (ACTIVE, INACTIVE, ENCUMBERED, etc.)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of collaterals with the specified status", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Collateral.class)))
+    })
     @GetMapping("/status/{status}")
-    public Flux<Collateral> getCollateralsByStatus(@PathVariable CollateralStatus status) {
+    public Flux<Collateral> getCollateralsByStatus(
+            @Parameter(description = "Status of collaterals to retrieve", required = true) @PathVariable CollateralStatus status) {
         log.info("REST request to get collaterals by status: {}", status);
         return collateralService.getCollateralsByStatus(status);
     }
 
+    @Operation(summary = "Get available collaterals", description = "Retrieves all available (unencumbered) collaterals for a customer with optional minimum value filter")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of available collaterals for the customer", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Collateral.class)))
+    })
     @GetMapping("/customer/{customerId}/available")
     public Flux<Collateral> getAvailableCollaterals(
-            @PathVariable String customerId,
-            @RequestParam(defaultValue = "0") BigDecimal minValue) {
+            @Parameter(description = "Unique identifier of the customer", required = true) @PathVariable String customerId,
+            @Parameter(description = "Minimum market value filter (defaults to 0)") @RequestParam(defaultValue = "0") BigDecimal minValue) {
         log.info("REST request to get available collaterals for customer: {} with min value: {}", customerId, minValue);
         return collateralService.getAvailableCollaterals(customerId, minValue);
     }
 
+    @Operation(summary = "Get encumbered collaterals", description = "Retrieves all collaterals that are currently encumbered (pledged as security)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of all encumbered collaterals", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Collateral.class)))
+    })
     @GetMapping("/encumbered")
     public Flux<Collateral> getEncumberedCollaterals() {
         log.info("REST request to get all encumbered collaterals");
         return collateralService.getEncumberedCollaterals();
     }
 
+    @Operation(summary = "Update collateral value", description = "Updates the market value of a specific collateral asset")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Collateral value updated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Collateral.class))),
+            @ApiResponse(responseCode = "404", description = "Collateral not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid value provided")
+    })
     @PatchMapping("/{collateralId}/value")
     public Mono<ResponseEntity<Collateral>> updateCollateralValue(
-            @PathVariable String collateralId,
-            @RequestBody UpdateValueRequest request) {
+            @Parameter(description = "Unique identifier of the collateral", required = true) @PathVariable String collateralId,
+            @Parameter(description = "New market value information", required = true) @RequestBody UpdateValueRequest request) {
         log.info("REST request to update value for collateral: {} to {}", collateralId, request.getMarketValue());
 
         return collateralService.updateCollateralValue(collateralId, request.getMarketValue())
@@ -149,6 +185,10 @@ public class CollateralController {
         return Mono.just(ResponseEntity.ok().body(CollateralType.values()));
     }
 
+    @Operation(summary = "Get collateral statuses", description = "Retrieves all available collateral status values")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of collateral statuses", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CollateralStatus[].class)))
+    })
     @GetMapping("/statuses")
     public Mono<ResponseEntity<CollateralStatus[]>> getCollateralStatuses() {
         log.info("REST request to get all collateral statuses");
@@ -157,8 +197,14 @@ public class CollateralController {
 
     // External API Integration endpoints
 
+    @Operation(summary = "Create collateral with validation", description = "Creates a new collateral asset with enhanced validation including external system checks")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Collateral created successfully with validation", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Collateral.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data or validation failed")
+    })
     @PostMapping("/create-with-validation")
-    public Mono<ResponseEntity<Collateral>> createCollateralWithValidation(@RequestBody Collateral collateral) {
+    public Mono<ResponseEntity<Collateral>> createCollateralWithValidation(
+            @Parameter(description = "Collateral details to create with validation", required = true) @RequestBody Collateral collateral) {
         log.info("REST request to create collateral with validation for customer: {}", collateral.getCustomerId());
 
         return collateralService.createCollateralWithValidation(collateral)
