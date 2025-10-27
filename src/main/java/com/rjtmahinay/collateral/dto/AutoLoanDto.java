@@ -16,8 +16,6 @@ public class AutoLoanDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class VehicleAppraisalRequest {
-        private String collateralId;
-        private String collateralType;
         private String vin;
         private Integer year;
         private String make;
